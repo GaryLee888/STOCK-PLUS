@@ -1,0 +1,10 @@
+streamlit
+yfinance
+pandas
+numpy
+plotly
+matplotlib
+twstock
+FinMind
+textblob
+pygooglenews
