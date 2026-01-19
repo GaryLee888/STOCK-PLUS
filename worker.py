@@ -102,3 +102,5 @@ class DayTradeWorker:
 
 if __name__ == "__main__":
     DayTradeWorker().start_monitoring()
+# 在 login_and_prepare 成功後加入這行
+requests.post(DISCORD_URL, data={"content": "✅ GitHub Actions 雲端主機已成功連線，明天準時開盤監控！"})
