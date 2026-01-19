@@ -1,12 +1,46 @@
-# ... 前面內容不變 ...
-      - name: 執行監控
+name: 24H_Trading_Radar
+
+# 設定觸發條件
+on:
+  schedule:
+    # 台灣時間週一至週五 08:50 啟動 (UTC 是 00:50)
+    - cron: '50 0 * * 1-5'
+  # 開啟手動啟動按鈕
+  workflow_dispatch:
+
+jobs:
+  run_monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. 下載 GitHub 倉庫裡的程式碼
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. 設定 Python 環境
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      # 3. 安裝必要的套件 (與 requirements.txt 同步)
+      - name: Install Dependencies
+        run: |
+          pip install shioaji pandas pillow requests openpyxl
+
+      # 4. 執行監控主程式
+      - name: Run Trading Radar
         env:
+          # 從 GitHub Secrets 抓取你的 API Key
           API_KEY: ${{ secrets.API_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: python worker.py
 
-      - name: 上傳報表
+      # 5. 交易結束後，將生成的 Excel 檔案上傳到 GitHub 以供下載
+      - name: Upload Excel Report
+        if: always() # 確保即使程式出錯也會嘗試上傳已產生的紀錄
         uses: actions/upload-artifact@v4
         with:
-          name: Trading-Report-${{ github.run_id }}
+          name: Trading-Daily-Report
           path: DayTrade_Log_*.xlsx
+          retention-days: 7 # 報表保留 7 天
