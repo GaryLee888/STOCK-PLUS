@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 API_KEY = os.getenv("API_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY")
 # 你的 Discord Webhook URL
-DISCORD_URL = "https://discord.com/api/webhooks/1457393304537927764/D2vpM73dMl2Z-bLfI0Us52eGdCQyjztASwkBP3RzyF2jaALzEeaigajpXQfzsgLdyzw4"
+DISCORD_URL = "https://discord.com/api/webhooks/917970232084152411/kkkoyrfBEpN-UVEqweE0iNtpuUFjK4UAc7UKQWaJmio6rT5FJ1TukrE2xARYEZyeuKrQ"
 
 def get_daily_filename():
     return f"DayTrade_Log_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
@@ -158,3 +158,4 @@ class DayTradeWorker:
 if __name__ == "__main__":
     worker = DayTradeWorker()
     worker.start_monitoring()
+
