@@ -3,9 +3,10 @@ name: 24H_Trading_Radar
 # 設定觸發條件
 on:
   schedule:
-    # 台灣時間週一至週五 08:50 啟動 (UTC 是 00:50)
+    # 台灣時間 (UTC+8) 週一至週五 08:50 啟動
+    # 對應 UTC 時間為 00:50
     - cron: '50 0 * * 1-5'
-  # 開啟手動啟動按鈕
+  # 允許手動從 Actions 頁面啟動測試
   workflow_dispatch:
 
 jobs:
@@ -13,37 +14,34 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # 1. 下載 GitHub 倉庫裡的程式碼
+      # 1. 複製 GitHub 倉庫中的程式碼 (worker.py, msjhbd.ttc)
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. 設定 Python 環境
+      # 2. 設定 Python 3.9 環境
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      # 3. 安裝必要的套件 (與 requirements.txt 同步)
+      # 3. 安裝 Linux 中文字體與 Python 必要套件
       - name: Install Dependencies
         run: |
-          # 1. 更新軟體源並安裝中文字體 (wqy-microhei)
           sudo apt-get update
-          sudo apt-get install -y fonts-wqy-microhei
-          
-          # 2. 安裝 Python 必要的套件
+          sudo apt-get install -y fonts-wqy-microhei # 安裝文泉驛微米黑中文字體
           pip install shioaji pandas pillow requests openpyxl
 
-      # 4. 執行監控主程式
+      # 4. 執行監控主程式 (worker.py)
       - name: Run Trading Radar
         env:
-          # 從 GitHub Secrets 抓取你的 API Key
+          # 這裡必須與你在 Settings > Secrets 中設定的名稱完全一致
           API_KEY: ${{ secrets.API_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: python worker.py
 
-      # 5. 交易結束後，將生成的 Excel 檔案上傳到 GitHub 以供下載
+      # 5. 任務結束後，將當日的 Excel 報表上傳至 GitHub (Artifacts)
       - name: Upload Excel Report
-        if: always() # 確保即使程式出錯也會嘗試上傳已產生的紀錄
+        if: always() # 無論程式是否中斷，都嘗試上傳已產出的報表
         uses: actions/upload-artifact@v4
         with:
           name: Trading-Daily-Report
