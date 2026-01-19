@@ -27,7 +27,7 @@ class DayTradeWorker:
         self.cat_map = {}
         self.results = [] # 用於存儲當日成交紀錄
 
-    def login_and_prepare(self):
+    def login_and_prepare(self):requests.post(DISCORD_URL, data={"content": "✅ GitHub Actions 雲端主機已成功連線，明天準時開盤監控！"})
         print(f"[{datetime.now()}] 正在登入 Shioaji...")
         self.api.login(API_KEY, SECRET_KEY)
         raw = [c for m in [self.api.Contracts.Stocks.TSE, self.api.Contracts.Stocks.OTC] 
@@ -102,5 +102,4 @@ class DayTradeWorker:
 
 if __name__ == "__main__":
     DayTradeWorker().start_monitoring()
-# 在 login_and_prepare 成功後加入這行
-requests.post(DISCORD_URL, data={"content": "✅ GitHub Actions 雲端主機已成功連線，明天準時開盤監控！"})
+
