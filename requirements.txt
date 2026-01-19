@@ -1,7 +1,6 @@
-streamlit
-yfinance
+shioaji
 pandas
-numpy
-plotly
-twstock
-textblob
+Pillow
+openpyxl
+requests
+streamlit
