@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont
 
 # ==========================================
-# 1. 系統設定
+# 1. 系統設定 (由 GitHub Secrets 注入)
 # ==========================================
 API_KEY = os.getenv("API_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -36,7 +36,7 @@ class DayTradeWorker:
             print("✅ Shioaji 登入成功！")
             
             try:
-                requests.post(DISCORD_URL, data={"content": f"🔔 **當沖雷達啟動成功**\n時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n狀態: 🟢 雲端監控已就緒。"}, timeout=10)
+                requests.post(DISCORD_URL, data={"content": f"🔔 **當沖雷達啟動成功**\n時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n狀態: 🟢 雲端監控已就緒，複盤績效追蹤已開啟。"}, timeout=10)
             except: pass
             
             raw = [c for m in [self.api.Contracts.Stocks.TSE, self.api.Contracts.Stocks.OTC] 
@@ -94,8 +94,6 @@ class DayTradeWorker:
             while True:
                 now = datetime.now()
                 hm = now.hour * 100 + now.minute
-
-                # 自動結束監控時間：13:45
                 if hm > 1345:
                     print("🏁 盤後時間已到，停止監控。")
                     break
@@ -123,7 +121,11 @@ class DayTradeWorker:
                             self.trigger_history[code] = [t for t in self.trigger_history.get(code, []) if t > now - timedelta(minutes=10)] + [now]
                             if len(self.trigger_history[code]) >= h_thr:
                                 if not self.reported_log.get(code) or (now - self.reported_log[code] > timedelta(minutes=45)):
-                                    item = {"時間": now.strftime("%H:%M:%S"), "code": code, "name": self.name_map[code], "price": s.close, "chg": chg, "tp": s.close*1.025, "sl": s.close*0.985, "cond": "💎 強勢突破"}
+                                    item = {
+                                        "時間": now.strftime("%H:%M:%S"), "code": code, "name": self.name_map[code], 
+                                        "price": s.close, "chg": chg, "tp": s.close*1.025, 
+                                        "sl": s.close*0.985, "cond": "💎 強勢突破"
+                                    }
                                     self.results.append(item)
                                     buf = self.create_card(item)
                                     requests.post(DISCORD_URL, data={"content": f"🚀 **發財電報**\n🔥 **{item['code']} {item['name']}** 爆發！"}, files={"file": (f"{code}.png", buf)}, timeout=10)
@@ -131,14 +133,26 @@ class DayTradeWorker:
                     except: continue
                 time.sleep(15)
 
-            # --- 存檔區 ---
+            # --- 存檔與績效計算區 ---
             if self.results:
-                print("💾 正在產出報表...")
+                print("💾 正在抓取收盤價並計算績效...")
+                triggered_codes = [item['code'] for item in self.results]
+                try:
+                    closing_snaps = self.api.snapshots(triggered_codes)
+                    close_map = {s.code: s.close for s in closing_snaps}
+                    for item in self.results:
+                        final_close = close_map.get(item['code'], 0)
+                        item['收盤價'] = final_close
+                        item['績效%'] = round(((final_close - item['price']) / item['price'] * 100), 2) if item['price'] > 0 else 0
+                except Exception as e:
+                    print(f"⚠️ 績效計算失敗: {e}")
+
                 df = pd.DataFrame(self.results)
+                cols = ['時間', 'code', 'name', 'price', '收盤價', '績效%', 'chg', 'tp', 'sl']
+                df = df[cols] if all(c in df.columns for c in cols) else df
                 df.to_excel(get_daily_filename(), index=False)
-                print(f"✅ 今日報表已存至: {get_daily_filename()}")
+                print(f"✅ 報表已產出：{get_daily_filename()}")
             else:
-                # 確保即便沒觸發也產生一個空檔，防止 GitHub Actions 報錯
                 pd.DataFrame([{"說明": "本日未觸發任何訊號"}]).to_excel(get_daily_filename(), index=False)
 
         finally:
